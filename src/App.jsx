@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import Globe from './components/Globe.jsx'
 import GlobeDarkTheme from './components/GlobeDarkTheme.jsx'
 
@@ -20,6 +20,8 @@ const styles = {
     WebkitBackdropFilter: 'blur(20px)',
     borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
     gap: '8px',
+    position: 'relative',
+    zIndex: 100,
   },
   tab: (active) => ({
     padding: '8px 20px',
@@ -38,29 +40,46 @@ const styles = {
   },
 }
 
-function App() {
-  const [theme, setTheme] = useState('default')
+function ThemeSwitcher() {
+  const location = useLocation()
+  const navigate = useNavigate()
 
   return (
-    <div style={styles.app}>
-      <nav style={styles.navbar}>
-        <button
-          style={styles.tab(theme === 'default')}
-          onClick={() => setTheme('default')}
-        >
-          默认主题
-        </button>
-        <button
-          style={styles.tab(theme === 'dark')}
-          onClick={() => setTheme('dark')}
-        >
-          暗黑主题
-        </button>
-      </nav>
-      <div style={styles.globeContainer}>
-        {theme === 'default' ? <Globe /> : <GlobeDarkTheme />}
-      </div>
+    <nav style={styles.navbar}>
+      <button
+        style={styles.tab(location.pathname === '/' || location.pathname === '/default')}
+        onClick={() => navigate('/default')}
+      >
+        默认主题
+      </button>
+      <button
+        style={styles.tab(location.pathname === '/dark')}
+        onClick={() => navigate('/dark')}
+      >
+        暗黑主题
+      </button>
+    </nav>
+  )
+}
+
+function GlobePage() {
+  const location = useLocation()
+
+  return (
+    <div style={styles.globeContainer}>
+      {location.pathname === '/dark' ? <GlobeDarkTheme /> : <Globe />}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <div style={styles.app}>
+        <ThemeSwitcher />
+        <GlobePage />
+      </div>
+    </BrowserRouter>
   )
 }
 

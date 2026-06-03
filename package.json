@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "gsap": "^3.12.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "three": "^0.175.0",
-    "gsap": "^3.12.7"
+    "react-router-dom": "^7.16.0",
+    "three": "^0.175.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.0",
