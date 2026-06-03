@@ -69,8 +69,8 @@ const FLYING_LINE_ANIMATION_CONFIG = {
   tubeRadius: 0.05, // 圆管半径
   radialSegments: 8, // 圆形截面分段数
   tubularSegments: 50, // 沿路径分段数
-  animationSpeed: 0.032, // 动画速度
-  cycleDuration: 4.0, // 动画周期（秒）
+  animationSpeed: 0.012, // 动画速度
+  cycleDuration: 16.0, // 动画周期（秒）
   arcHeight: 0.37, // 弧线高度系数
   minArcHeight: 3, // 最小弧线高度
 }
@@ -149,7 +149,8 @@ function Globe() {
         mouseDown,
         grabbing,
         flyingLines,
-        flyingLineMaterials
+        flyingLineMaterials,
+        dotMeshes
 
     const setScene = () => {
       sizes = {
@@ -233,43 +234,14 @@ function Globe() {
     const setFlyingLines = () => {
       flyingLines = []
       flyingLineMaterials = []
+      dotMeshes = []
 
-      // 创建程序化纹理作为备用 - 不透明版本
-      const createGradientTexture = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = 256
-        canvas.height = 32
-        const ctx = canvas.getContext('2d')
-
-        // 创建不透明的渐变
-        const gradient = ctx.createLinearGradient(0, 0, 256, 0)
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(0.3, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(0.7, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 1.0)')
-
-        ctx.fillStyle = gradient
-        ctx.fillRect(0, 0, 256, 32)
-
-        const texture = new THREE.CanvasTexture(canvas)
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.ClampToEdgeWrapping
-        return texture
-      }
-
-      // 加载arc-texture纹理，如果失败则使用程序化纹理
+      // 加载arc-texture贴图
       const textureLoader = new THREE.TextureLoader()
-      const gradientTexture = createGradientTexture()
 
-      const arcTextures = [
-        gradientTexture, // 使用程序化纹理作为主要纹理
-        gradientTexture,
-        gradientTexture,
-        gradientTexture,
-      ]
+      const arcTextures = []
 
-      // 尝试加载外部纹理（如果存在的话）
-      const tryLoadTexture = (url, index) => {
+      const loadArcTexture = (url, index) => {
         textureLoader.load(
             url,
             (texture) => {
@@ -279,16 +251,16 @@ function Globe() {
             undefined,
             (error) => {
               console.log(
-                  `Failed to load texture: ${url}, using gradient texture instead`,
+                  `Failed to load texture: ${url}`,
               )
             },
         )
       }
 
-      tryLoadTexture('/img/arc-texture-1.png', 0)
-      tryLoadTexture('/img/arc-texture-2.png', 1)
-      tryLoadTexture('/img/arc-texture-3.png', 2)
-      tryLoadTexture('/img/arc-texture-4.png', 3)
+      loadArcTexture('/img/arc-texture-1.png', 0)
+      loadArcTexture('/img/arc-texture-2.png', 1)
+      loadArcTexture('/img/arc-texture-3.png', 2)
+      loadArcTexture('/img/arc-texture-4.png', 3)
 
       // 飞线的顶点着色器 - 两阶段动画效果
       const flyingLineVertex = `
@@ -371,63 +343,14 @@ function Globe() {
           // 如果不可见则丢弃像素
           if (vVisibility < 0.01) discard;
           
-          // 创建动态纹理坐标
-          vec2 dynamicUv = vUv;
-          
-          if (vAnimationPhase < 0.5) {
-            // 延伸阶段：纹理跟随动画前端移动
-            float textureOffset = vAnimationProgress - 0.3; // 纹理稍微滞后于动画前端
-            dynamicUv.x = (vUv.x - textureOffset) * 3.0; // 拉伸纹理，让渐变更明显
-          } else if (vAnimationPhase < 1.5) {
-            // 停留阶段：纹理保持动态流动，增强渐变效果
-            float flowSpeed = 0.3; // 增加流动速度
-            float textureOffset = time * flowSpeed;
-            
-            // 添加双向流动效果，创造更丰富的渐变
-            float wave1 = sin(time * 2.0 + vProgress * 6.28318) * 0.1;
-            float wave2 = cos(time * 1.5 - vProgress * 4.0) * 0.05;
-            
-            dynamicUv.x = vUv.x + textureOffset + wave1 + wave2;
-          } else {
-            // 收回阶段：纹理跟随收回前端移动
-            float textureOffset = vAnimationProgress + 0.3; // 纹理稍微超前于收回前端
-            dynamicUv.x = (vUv.x - textureOffset) * 3.0;
-          }
-          
           // 采样纹理
-          vec4 textureColor = texture2D(arcTexture, dynamicUv);
+          vec4 textureColor = texture2D(arcTexture, vUv.yx);
           
           // 圆形管道的边缘柔化效果 - 只在径向方向柔化，不影响首尾
           float radialDistance = abs(vUv.y - 0.5) * 2.0; // 0到1，表示距离管道中心轴的距离
-          float edgeFade = 1.0 - smoothstep(0.6, 1.0, radialDistance); // 只在管道边缘柔化
+          float edgeFade = 1.0 - smoothstep(0.0, 1.0, radialDistance); // 只在管道边缘柔化
           
-          // 创建流动的渐变效果
-          float flowGradient = 1.0;
-          if (vAnimationPhase < 0.5) {
-            // 延伸阶段：保持均匀亮度，不添加头部渐变
-            flowGradient = 1.0;
-          } else if (vAnimationPhase < 1.5) {
-            // 停留阶段：保持动态渐变效果
-            float stayTime = time * 0.5; // 控制停留阶段的动画速度
-            
-            // 创建沿线条流动的渐变波
-            float wave1 = 0.6 + 0.4 * sin(stayTime * 3.0 + vProgress * 8.0);
-            float wave2 = 0.5 + 0.3 * cos(stayTime * 2.0 - vProgress * 5.0);
-            
-            // 添加整体的呼吸效果
-            float breathe = 0.8 + 0.2 * sin(stayTime * 1.5);
-            
-            flowGradient = (wave1 + wave2) * 0.5 * breathe;
-          } else {
-            // 收回阶段：保持均匀亮度，不添加尾部渐变
-            flowGradient = 1.0;
-          }
-          
-          // 增强纹理效果 - 不依赖透明度
-          float textureIntensity = textureColor.r;
-          
-          // 结合纹理、颜色、亮度和流动渐变，创造不透明的效果
-          vec3 finalColor = color * brightness * (0.5 + textureIntensity * 0.5 + flowGradient * 0.8);
+          vec3 finalColor = color * brightness;
           
           // 设置为不透明，只保留可见性控制
           float finalAlpha = vVisibility * edgeFade;
@@ -437,7 +360,7 @@ function Globe() {
       `
 
       // 计算两点间的贝塞尔曲线路径 - 优化版本
-      const createCurvedPath = (start, end, segments = 60) => {
+      const calculateBezierCurvePoints = (start, end, segments = 60) => {
         const points = []
         const distance = start.distanceTo(end)
         const height = Math.max(
@@ -482,7 +405,7 @@ function Globe() {
       }
 
       // 计算地球表面位置（用于端点圆心） - 与地图点位置完全一致
-      const latLonToSurfaceVector3 = (
+      const convertLatLonToSurfacePosition = (
           lat,
           lon,
           radius = MAP_DOTS_CONFIG.sphereRadius,
@@ -498,9 +421,9 @@ function Globe() {
       }
 
       // 创建端点标记 - 贴在地球表面
-      const createEndPoint = (latLon, color) => {
+      const buildEndpointMarker = (latLon, color) => {
         // 使用地球表面位置
-        const surfacePosition = latLonToSurfaceVector3(latLon.lat, latLon.lon)
+        const surfacePosition = convertLatLonToSurfacePosition(latLon.lat, latLon.lon)
 
         // 创建一个平面几何体，使用配置的端点大小
         const geometry = new THREE.PlaneGeometry(
@@ -573,17 +496,17 @@ function Globe() {
       }
 
       // 创建飞线 - 使用圆形管道几何体
-      const createFlyingLine = (
+      const buildFlyingLineMesh = (
           startLatLon,
           endLatLon,
           color = new THREE.Vector3(0.3, 0.8, 1.0),
           textureIndex = 0,
       ) => {
         // 使用与圆点完全相同的位置计算方法
-        const startPos = latLonToSurfaceVector3(startLatLon.lat, startLatLon.lon)
-        const endPos = latLonToSurfaceVector3(endLatLon.lat, endLatLon.lon)
+        const startPos = convertLatLonToSurfacePosition(startLatLon.lat, startLatLon.lon)
+        const endPos = convertLatLonToSurfacePosition(endLatLon.lat, endLatLon.lon)
 
-        const pathPoints = createCurvedPath(startPos, endPos, 50)
+        const pathPoints = calculateBezierCurvePoints(startPos, endPos, 50)
 
         // 创建曲线路径
         const curve = new THREE.CatmullRomCurve3(pathPoints)
@@ -643,13 +566,13 @@ function Globe() {
         flyingLines.push(line)
 
         // 创建起点和终点的标记
-        createEndPoint(startLatLon, color)
-        createEndPoint(endLatLon, color)
+        buildEndpointMarker(startLatLon, color)
+        buildEndpointMarker(endLatLon, color)
       }
 
       // 使用配置创建飞线
       FLYING_LINE_ROUTES.forEach((route, index) => {
-        createFlyingLine(
+        buildFlyingLineMesh(
             route.start,
             route.end,
             FLYING_LINE_COLORS[index % FLYING_LINE_COLORS.length],

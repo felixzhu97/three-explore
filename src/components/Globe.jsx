@@ -39,14 +39,14 @@ const FLYING_LINE_ROUTES = [
   },
 ]
 
-// 飞线颜色配置 - Stripe 风格：暖橙色/珊瑚色
+// 飞线颜色配置
 const FLYING_LINE_COLORS = [
-  new THREE.Vector3(1.0, 0.55, 0.35), // 暖橙色
-  new THREE.Vector3(1.0, 0.5, 0.3),   // 深橙色
-  new THREE.Vector3(0.95, 0.6, 0.4),  // 浅橙色
-  new THREE.Vector3(1.0, 0.6, 0.35),  // 中橙色
-  new THREE.Vector3(0.9, 0.5, 0.3),   // 暗橙色
-  new THREE.Vector3(1.0, 0.65, 0.45),  // 亮橙色
+  new THREE.Vector3(0.3, 0.8, 1.0), // 蓝色
+  new THREE.Vector3(1.0, 0.5, 0.3), // 橙色
+  new THREE.Vector3(0.5, 1.0, 0.3), // 绿色
+  new THREE.Vector3(1.0, 0.3, 0.8), // 粉色
+  new THREE.Vector3(0.8, 0.8, 0.3), // 黄色
+  new THREE.Vector3(0.6, 0.3, 1.0), // 紫色
 ]
 
 // 圆心点配置
@@ -69,9 +69,9 @@ const FLYING_LINE_ANIMATION_CONFIG = {
   tubeRadius: 0.05, // 圆管半径
   radialSegments: 8, // 圆形截面分段数
   tubularSegments: 50, // 沿路径分段数
-  animationSpeed: 0.032, // 动画速度
-  cycleDuration: 4.0, // 动画周期（秒）
-  arcHeight: 0.25, // 弧线高度系数
+  animationSpeed: 0.012, // 动画速度
+  cycleDuration: 16.0, // 动画周期（秒）
+  arcHeight: 0.37, // 弧线高度系数
   minArcHeight: 3, // 最小弧线高度
 }
 
@@ -239,41 +239,11 @@ function Globe() {
       flyingLineMaterials = []
       dotMeshes = []
 
-      // 创建程序化纹理作为备用 - 不透明版本
-      const generateFallbackGradientTexture = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = 256
-        canvas.height = 32
-        const ctx = canvas.getContext('2d')
-
-        // 创建不透明的渐变
-        const gradient = ctx.createLinearGradient(0, 0, 256, 0)
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(0.3, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(0.7, 'rgba(255, 255, 255, 1.0)')
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 1.0)')
-
-        ctx.fillStyle = gradient
-        ctx.fillRect(0, 0, 256, 32)
-
-        const texture = new THREE.CanvasTexture(canvas)
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.ClampToEdgeWrapping
-        return texture
-      }
-
-      // 加载arc-texture纹理，如果失败则使用程序化纹理
+      // 加载arc-texture贴图
       const textureLoader = new THREE.TextureLoader()
-      const gradientTexture = generateFallbackGradientTexture()
 
-      const arcTextures = [
-        gradientTexture, // 使用程序化纹理作为主要纹理
-        gradientTexture,
-        gradientTexture,
-        gradientTexture,
-      ]
+      const arcTextures = []
 
-      // 尝试加载外部纹理（如果存在的话）
       const loadArcTexture = (url, index) => {
         textureLoader.load(
           url,
@@ -284,7 +254,7 @@ function Globe() {
           undefined,
           (error) => {
             console.log(
-              `Failed to load texture: ${url}, using gradient texture instead`,
+              `Failed to load texture: ${url}`,
             )
           },
         )
@@ -376,63 +346,14 @@ function Globe() {
           // 如果不可见则丢弃像素
           if (vVisibility < 0.01) discard;
           
-          // 创建动态纹理坐标
-          vec2 dynamicUv = vUv;
-          
-          if (vAnimationPhase < 0.5) {
-            // 延伸阶段：纹理跟随动画前端移动
-            float textureOffset = vAnimationProgress - 0.3; // 纹理稍微滞后于动画前端
-            dynamicUv.x = (vUv.x - textureOffset) * 3.0; // 拉伸纹理，让渐变更明显
-          } else if (vAnimationPhase < 1.5) {
-            // 停留阶段：纹理保持动态流动，增强渐变效果
-            float flowSpeed = 0.3; // 增加流动速度
-            float textureOffset = time * flowSpeed;
-            
-            // 添加双向流动效果，创造更丰富的渐变
-            float wave1 = sin(time * 2.0 + vProgress * 6.28318) * 0.1;
-            float wave2 = cos(time * 1.5 - vProgress * 4.0) * 0.05;
-            
-            dynamicUv.x = vUv.x + textureOffset + wave1 + wave2;
-          } else {
-            // 收回阶段：纹理跟随收回前端移动
-            float textureOffset = vAnimationProgress + 0.3; // 纹理稍微超前于收回前端
-            dynamicUv.x = (vUv.x - textureOffset) * 3.0;
-          }
-          
           // 采样纹理
-          vec4 textureColor = texture2D(arcTexture, dynamicUv);
+          vec4 textureColor = texture2D(arcTexture, vUv.yx);
           
           // 圆形管道的边缘柔化效果 - 只在径向方向柔化，不影响首尾
           float radialDistance = abs(vUv.y - 0.5) * 2.0; // 0到1，表示距离管道中心轴的距离
-          float edgeFade = 1.0 - smoothstep(0.6, 1.0, radialDistance); // 只在管道边缘柔化
+          float edgeFade = 1.0 - smoothstep(0.0, 1.0, radialDistance); // 只在管道边缘柔化
           
-          // 创建流动的渐变效果
-          float flowGradient = 1.0;
-          if (vAnimationPhase < 0.5) {
-            // 延伸阶段：保持均匀亮度，不添加头部渐变
-            flowGradient = 1.0;
-          } else if (vAnimationPhase < 1.5) {
-            // 停留阶段：保持动态渐变效果
-            float stayTime = time * 0.5; // 控制停留阶段的动画速度
-            
-            // 创建沿线条流动的渐变波
-            float wave1 = 0.6 + 0.4 * sin(stayTime * 3.0 + vProgress * 8.0);
-            float wave2 = 0.5 + 0.3 * cos(stayTime * 2.0 - vProgress * 5.0);
-            
-            // 添加整体的呼吸效果
-            float breathe = 0.8 + 0.2 * sin(stayTime * 1.5);
-            
-            flowGradient = (wave1 + wave2) * 0.5 * breathe;
-          } else {
-            // 收回阶段：保持均匀亮度，不添加尾部渐变
-            flowGradient = 1.0;
-          }
-          
-          // 增强纹理效果 - 不依赖透明度
-          float textureIntensity = textureColor.r;
-          
-          // 结合纹理、颜色、亮度和流动渐变，创造不透明的效果
-          vec3 finalColor = color * brightness * (0.5 + textureIntensity * 0.5 + flowGradient * 0.8);
+          vec3 finalColor = color * brightness;
           
           // 设置为不透明，只保留可见性控制
           float finalAlpha = vVisibility * edgeFade;
