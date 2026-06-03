@@ -19,8 +19,8 @@ function App() {
       <div style={styles.app}>
         <NavBar />
         <Routes>
-          <Route path="/default" element={<DefaultThemePage />} />
-          <Route path="/dark" element={<DarkThemePage />} />
+          <Route path="/globe-light" element={<DefaultThemePage />} />
+          <Route path="/globe-dark" element={<DarkThemePage />} />
           <Route path="/" element={<DefaultThemePage />} />
         </Routes>
       </div>

@@ -37,36 +37,36 @@ export default function NavBar() {
   return (
     <nav style={styles.navbar}>
       <button
-        style={styles.tab(location.pathname === '/default')}
-        onClick={() => navigate('/default')}
+        style={styles.tab(location.pathname === '/globe-light')}
+        onClick={() => navigate('/globe-light')}
         onMouseEnter={(e) => {
-          if (location.pathname !== '/default') {
+          if (location.pathname !== '/globe-light') {
             e.currentTarget.style.color = '#1d1d1f'
           }
         }}
         onMouseLeave={(e) => {
-          if (location.pathname !== '/default') {
+          if (location.pathname !== '/globe-light') {
             e.currentTarget.style.color = '#6e6e73'
           }
         }}
       >
-        默认主题
+        Globe Light
       </button>
       <button
-        style={styles.tab(location.pathname === '/dark')}
-        onClick={() => navigate('/dark')}
+        style={styles.tab(location.pathname === '/globe-dark')}
+        onClick={() => navigate('/globe-dark')}
         onMouseEnter={(e) => {
-          if (location.pathname !== '/dark') {
+          if (location.pathname !== '/globe-dark') {
             e.currentTarget.style.color = '#1d1d1f'
           }
         }}
         onMouseLeave={(e) => {
-          if (location.pathname !== '/dark') {
+          if (location.pathname !== '/globe-dark') {
             e.currentTarget.style.color = '#6e6e73'
           }
         }}
       >
-        暗黑主题
+        Globe Dark
       </button>
     </nav>
   )
