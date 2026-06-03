@@ -57,7 +57,7 @@ const ENDPOINT_CONFIG = {
 
 // 地图点配置
 const MAP_DOTS_CONFIG = {
-  sphereRadius: 20, // 地球半径
+  sphereRadius: 19.5, // 地球半径
   dotRadius: 0.1, // 地图点半径
   dotSegments: 5, // 地图点分段数
   dotDensity: 2.5, // 地图点密度
@@ -71,7 +71,7 @@ const FLYING_LINE_ANIMATION_CONFIG = {
   tubularSegments: 50, // 沿路径分段数
   animationSpeed: 0.032, // 动画速度
   cycleDuration: 4.0, // 动画周期（秒）
-  arcHeight: 0.25, // 弧线高度系数
+  arcHeight: 0.37, // 弧线高度系数
   minArcHeight: 3, // 最小弧线高度
 }
 

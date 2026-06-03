@@ -8,8 +8,6 @@ const styles = {
     height: '100%',
     margin: 0,
     padding: 0,
-    background: '#0f2027',
-    background: '-webkit-linear-gradient(to top, #0f2027, #203a43, #2c5364)',
     background: 'linear-gradient(to top, #0f2027, #203a43, #2c5364)',
     color: 'rgb(49, 98, 127)',
   },
