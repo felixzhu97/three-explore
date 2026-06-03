@@ -855,13 +855,7 @@ function Globe() {
         el.uniforms.u_time.value += twinkleTime
       })
 
-      // 地球呼吸缩放动画
-      if (baseMesh) {
-        const breathe = 1 + 0.05 * Math.sin(Date.now() * 0.002)
-        baseMesh.scale.setScalar(breathe)
-      }
-
-      // 更新飞线动画
+      controls.update()
       if (flyingLineMaterials) {
         flyingLineMaterials.forEach((mat) => {
           mat.uniforms.time.value +=
@@ -907,7 +901,7 @@ function Globe() {
         className="source_btn"
         onClick={() =>
           window.open(
-            'https://github.com/felixzhu97/public-three-explore',
+            'https://github.com/felixzhu97/three-explore',
             '_blank',
           )
         }

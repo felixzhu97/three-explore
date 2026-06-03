@@ -26,6 +26,6 @@ npm run dev
 
 Inspired by GitHub & Stripe's WebGL globe implementations.
 
-View live: https://threejs-globe-main.vercel.app
+View live: [https://threejs-globe-main.vercel.app](https://threejs-globe-main.vercel.app)
 
-![Globe Preview](./public/img/app_screen_shot.png)
+Globe Preview
