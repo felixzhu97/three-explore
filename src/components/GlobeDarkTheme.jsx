@@ -41,12 +41,12 @@ const FLYING_LINE_ROUTES = [
 
 // 飞线颜色配置
 const FLYING_LINE_COLORS = [
-  new THREE.Vector3(0.3, 0.8, 1.0), // 蓝色
-  new THREE.Vector3(1.0, 0.5, 0.3), // 橙色
-  new THREE.Vector3(0.5, 1.0, 0.3), // 绿色
-  new THREE.Vector3(1.0, 0.3, 0.8), // 粉色
-  new THREE.Vector3(0.8, 0.8, 0.3), // 黄色
-  new THREE.Vector3(0.6, 0.3, 1.0), // 紫色
+  new THREE.Vector3(0.0, 0.6, 1.0),
+  new THREE.Vector3(0.0, 0.4, 0.9),
+  new THREE.Vector3(0.1, 0.5, 0.95),
+  new THREE.Vector3(0.0, 0.7, 1.0),
+  new THREE.Vector3(0.0, 0.5, 0.85),
+  new THREE.Vector3(0.05, 0.55, 0.9),
 ]
 
 // 圆心点配置
@@ -103,9 +103,9 @@ const fragment = `
   uniform float u_time;
 
   // 科技感配色方案 - 青蓝色调
-  vec3 colorA = vec3(0.0, 0.8, 1.0);    // 明亮的青色
-  vec3 colorB = vec3(0.0, 0.4, 0.8);    // 深蓝色
-  vec3 colorC = vec3(0.2, 1.0, 0.8);    // 青绿色
+  vec3 colorA = vec3(0.0, 0.5, 0.8);
+  vec3 colorB = vec3(0.0, 0.3, 0.6);
+  vec3 colorC = vec3(0.1, 0.6, 0.9);
 
   void main() {
 
@@ -158,6 +158,7 @@ function Globe() {
       }
 
       scene = new THREE.Scene()
+      scene.background = new THREE.Color(0x0a1628)
 
       camera = new THREE.PerspectiveCamera(30, sizes.width / sizes.height, 1, 1000)
       camera.position.z = 100
@@ -165,7 +166,6 @@ function Globe() {
       renderer = new THREE.WebGLRenderer({
         canvas: canvas,
         antialias: false,
-        alpha: true,
       })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
@@ -206,11 +206,11 @@ function Globe() {
     const setBaseSphere = () => {
       const baseSphere = new THREE.SphereGeometry(19.5, 35, 35)
       const baseMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff, // 深蓝黑色，更有科技感
+        color: 0x1e3a5f,
         transparent: true,
-        opacity: 0.85,
-        metalness: 0.3, // 增加金属质感
-        roughness: 0.7,
+        opacity: 0.9,
+        metalness: 0.2,
+        roughness: 0.8,
       })
       baseMesh = new THREE.Mesh(baseSphere, baseMaterial)
       scene.add(baseMesh)
