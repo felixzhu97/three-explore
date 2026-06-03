@@ -39,14 +39,14 @@ const FLYING_LINE_ROUTES = [
   },
 ]
 
-// 飞线颜色配置
+// 飞线颜色配置 - Stripe 风格：暖橙色/珊瑚色
 const FLYING_LINE_COLORS = [
-  new THREE.Vector3(0.3, 0.8, 1.0), // 蓝色
-  new THREE.Vector3(1.0, 0.5, 0.3), // 橙色
-  new THREE.Vector3(0.5, 1.0, 0.3), // 绿色
-  new THREE.Vector3(1.0, 0.3, 0.8), // 粉色
-  new THREE.Vector3(0.8, 0.8, 0.3), // 黄色
-  new THREE.Vector3(0.6, 0.3, 1.0), // 紫色
+  new THREE.Vector3(1.0, 0.55, 0.35), // 暖橙色
+  new THREE.Vector3(1.0, 0.5, 0.3),   // 深橙色
+  new THREE.Vector3(0.95, 0.6, 0.4),  // 浅橙色
+  new THREE.Vector3(1.0, 0.6, 0.35),  // 中橙色
+  new THREE.Vector3(0.9, 0.5, 0.3),   // 暗橙色
+  new THREE.Vector3(1.0, 0.65, 0.45),  // 亮橙色
 ]
 
 // 圆心点配置
@@ -84,9 +84,10 @@ const vertex = `
 
   uniform float u_time;
   uniform float u_maxExtrusion;
+  varying vec3 vNormal;
 
   void main() {
-
+    vNormal = normal;
     vec3 newPosition = position;
     if(u_maxExtrusion > 1.0) newPosition.xyz = newPosition.xyz * u_maxExtrusion + sin(u_time);
     else newPosition.xyz = newPosition.xyz * u_maxExtrusion;
@@ -101,24 +102,27 @@ const fragment = `
   #endif
 
   uniform float u_time;
+  varying vec3 vNormal;
 
-  // 科技感配色方案 - 青蓝色调
-  vec3 colorA = vec3(0.0, 0.8, 1.0);    // 明亮的青色
-  vec3 colorB = vec3(0.0, 0.4, 0.8);    // 深蓝色
-  vec3 colorC = vec3(0.2, 1.0, 0.8);    // 青绿色
+  // 炫彩配色 - 从上到下：橙色-粉色-紫色-靛色
+  vec3 colorA = vec3(1.0, 0.55, 0.1);    // 橙色
+  vec3 colorB = vec3(1.0, 0.35, 0.65);  // 粉色
+  vec3 colorC = vec3(0.55, 0.15, 0.95); // 紫色
+  vec3 colorD = vec3(0.25, 0.1, 0.75);  // 靛色
 
   void main() {
 
     vec3  color = vec3(0.0);
-    float pct1  = abs(sin(u_time));
-    float pct2  = abs(sin(u_time * 0.7 + 1.57)); // 相位偏移
-    
-    // 三色混合创造更丰富的科技感效果
-    color = mix(colorA, colorB, pct1);
-    color = mix(color, colorC, pct2 * 0.3);
-    
-    // 增加亮度和对比度
-    color *= 1.2;
+    // 基于 Y 坐标从上到下渐变：橙 -> 粉 -> 紫 -> 靛
+    float t = clamp((vNormal.y + 1.0) * 0.5, 0.0, 1.0); // 归一化 Y 到 [0,1]
+    if (t < 0.33) {
+      color = mix(colorA, colorB, t / 0.33);
+    } else if (t < 0.66) {
+      color = mix(colorB, colorC, (t - 0.33) / 0.33);
+    } else {
+      color = mix(colorC, colorD, (t - 0.66) / 0.34);
+    }
+    color *= 1.3;
 
     gl_FragColor = vec4(color, 1.0);
 
@@ -149,7 +153,8 @@ function Globe() {
       mouseDown,
       grabbing,
       flyingLines,
-      flyingLineMaterials
+      flyingLineMaterials,
+      dotMeshes
 
     const setScene = () => {
       sizes = {
@@ -169,10 +174,11 @@ function Globe() {
       })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-      const pointLight = new THREE.PointLight(0x081b26, 17, 200)
+      const pointLight = new THREE.PointLight(0xffffff, 3, 200)
       pointLight.position.set(-50, 0, 60)
       scene.add(pointLight)
       scene.add(new THREE.HemisphereLight(0xffffff, 0xffffff, 1.5))
+      scene.background = null
 
       raycaster = new THREE.Raycaster()
       mouse = new THREE.Vector2()
@@ -205,12 +211,10 @@ function Globe() {
 
     const setBaseSphere = () => {
       const baseSphere = new THREE.SphereGeometry(19.5, 35, 35)
-      const baseMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff, // 深蓝黑色，更有科技感
+      const baseMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.85,
-        metalness: 0.3, // 增加金属质感
-        roughness: 0.7,
+        opacity: 0.25,
       })
       baseMesh = new THREE.Mesh(baseSphere, baseMaterial)
       scene.add(baseMesh)
@@ -233,6 +237,7 @@ function Globe() {
     const setFlyingLines = () => {
       flyingLines = []
       flyingLineMaterials = []
+      dotMeshes = []
 
       // 创建程序化纹理作为备用 - 不透明版本
       const createGradientTexture = () => {
@@ -737,6 +742,7 @@ function Globe() {
 
             const m = createMaterial(i)
             const mesh = new THREE.Mesh(dotGeometry, m)
+            dotMeshes.push(mesh)
 
             scene.add(mesh)
           }
@@ -849,6 +855,12 @@ function Globe() {
         el.uniforms.u_time.value += twinkleTime
       })
 
+      // 地球呼吸缩放动画
+      if (baseMesh) {
+        const breathe = 1 + 0.05 * Math.sin(Date.now() * 0.002)
+        baseMesh.scale.setScalar(breathe)
+      }
+
       // 更新飞线动画
       if (flyingLineMaterials) {
         flyingLineMaterials.forEach((mat) => {
@@ -884,6 +896,7 @@ function Globe() {
 
       materials = []
       flyingLineMaterials = []
+      dotMeshes = []
     }
   }, [])
 
@@ -904,7 +917,7 @@ function Globe() {
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          stroke="#ffffff"
+          stroke="#333333"
         >
           <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
           <g
@@ -919,7 +932,7 @@ function Globe() {
               <path
                 id="Vector"
                 d="M15 7L20 12L15 17M9 17L4 12L9 7"
-                stroke="#ffffff"
+                stroke="#333333"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

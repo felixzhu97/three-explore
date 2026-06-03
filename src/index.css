@@ -16,10 +16,13 @@ html, body {
   height: 100%;
   margin: 0px;
   padding: 0px;
-  background: #0f2027;
-  background: -webkit-linear-gradient(to top, #0f2027, #203a43, #2c5364);
-  background: linear-gradient(to top, #0f2027, #203a43, #2c5364);
-  color: rgb(49, 98, 127);
+  background: radial-gradient(
+    ellipse 90% 85% at 50% 50%,
+    rgba(210, 120, 255, 0.22) 0%,
+    rgba(180, 80, 240, 0.10) 40%,
+    rgba(255, 255, 255, 0) 80%
+  ),
+  #ffffff;
 }
 
 .globe-canvas {
@@ -39,7 +42,8 @@ html, body {
   height: fit-content;
   border-radius: 50px;
   display: flex;
-  border: 1px solid #FFFFFF;
+  border: 1px solid #333333;
+  color: #333333;
   cursor: pointer;
   background: inherit;
   padding: 10px;
