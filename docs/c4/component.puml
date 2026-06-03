@@ -1,0 +1,106 @@
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Component Diagram - Domain Layer (src/domain.ts)
+
+' ============================================
+' Style settings
+' ============================================
+skinparam componentFontSize 10
+skinparam componentStyle rectangle
+skinparam roundcorner 6
+
+' ============================================
+' GlobeApp Factory entry point
+' ============================================
+Container(globe_app, "GlobeApp", "React + TypeScript", "Globe application factory - composes all components into a complete 3D globe")
+
+' ============================================
+' Container Boundary: Domain Layer
+' ============================================
+Container_Boundary(domain_layer, "Domain Layer (src/domain.ts)") {
+
+    ' ---------- Infrastructure ----------
+    Component(globe_scene, "GlobeScene", "Class", "Scene factory - encapsulates Scene/Camera/Renderer initialization")
+    Component(globe_controls, "GlobeControls", "Class", "Camera controller factory - OrbitControls wrapper")
+    Component(globe_renderer, "GlobeRenderer", "Class", "Render loop service - manages requestAnimationFrame")
+    Component(globe_events, "GlobeEvents", "Class", "Interaction service - handles mouse/touch events")
+
+    ' ---------- Domain Models ----------
+    Component(geo_coord, "GeoCoord", "Class / Entity", "Geographic coordinate - converts lat/lon to 3D Vector3")
+    Component(flight_route, "FlightRoute", "Class / Entity", "Flight route - origin/destination geographic coordinate pair")
+    Component(globe_config, "GlobeConfig", "Class / Config", "Globe configuration - radius/flying-line/lighting params")
+    Component(color_scheme, "ColorScheme", "Class", "Color scheme - bright/tech dual-theme support")
+
+    ' ---------- Application Services ----------
+    Component(land_map, "LandMap", "Class / Service", "Land map service - extracts land coords from texture and creates dot array")
+    Component(flying_line, "FlyingLine", "Class / Service", "Flying line entity - generates bezier curves and marker points")
+
+    ' ---------- Data / Types ----------
+    Component(theme_config, "ThemeConfig", "Interface / Type", "Theme config interface - shader/lighting/button styles")
+    Component(theme_bright, "BRIGHT_THEME", "Const Object", "Bright theme - warm gradient colors")
+    Component(theme_tech, "TECH_THEME", "Const Object", "Tech theme - cool neon colors")
+    Component(default_routes, "DEFAULT_ROUTES", "Const Array", "Default flight routes - 6 international routes")
+    Component(scene_context, "SceneContext", "Interface", "Scene context interface")
+    Component(globe_context, "GlobeAppContext", "Interface", "Application context interface")
+    Component(interaction_iface, "Interaction Types", "Interfaces", "GlobeInteraction / Callbacks")
+}
+
+' ============================================
+' External Dependencies
+' ============================================
+Container_Boundary(external_deps, "External Dependencies") {
+    Component(threejs, "Three.js", "Library", "WebGL 3D rendering engine")
+    Component(orbit_controls, "OrbitControls", "Three.js Addon", "Camera orbit controller")
+}
+
+' ============================================
+' Relationships
+' ============================================
+
+' GlobeApp composition
+Rel(globe_app, globe_scene, "Creates scene context")
+Rel(globe_app, globe_controls, "Creates controller")
+Rel(globe_app, globe_renderer, "Starts render loop")
+Rel(globe_app, globe_events, "Registers interaction events")
+Rel(globe_app, globe_config, "Reads config")
+Rel(globe_app, land_map, "Creates land map")
+Rel(globe_app, flying_line, "Creates flying line")
+Rel(globe_app, color_scheme, "Gets color scheme")
+
+' GlobeScene dependencies
+Rel(globe_scene, threejs, "Uses THREE.Scene/Camera/Renderer")
+Rel(globe_scene, globe_config, "Reads size config")
+
+' GlobeControls dependencies
+Rel(globe_controls, orbit_controls, "Wraps OrbitControls")
+Rel(globe_controls, globe_config, "Reads rotation speed and angle limits")
+
+' GlobeRenderer dependencies
+Rel(globe_renderer, threejs, "requestAnimationFrame")
+Rel(globe_renderer, globe_config, "Reads animation speed")
+
+' LandMap dependencies
+Rel(land_map, globe_config, "Reads radius/dot density/texture path")
+Rel(land_map, geo_coord, "Internally uses toVector3 conversion")
+Rel(land_map, threejs, "Creates CircleGeometry/Mesh/ShaderMaterial")
+
+' FlyingLine dependencies
+Rel(flying_line, flight_route, "Uses origin/destination coords")
+Rel(flying_line, geo_coord, "Calls toVector3() for conversion")
+Rel(flying_line, globe_config, "bezierCurvePoints() for path calculation")
+Rel(flying_line, threejs, "CatmullRomCurve3/TubeGeometry/ShaderMaterial")
+
+' GlobeConfig methods
+Rel(globe_config, threejs, "Creates materials / loads textures")
+Rel(globe_config, theme_config, "Applies theme config")
+
+' Theme configuration
+Rel(color_scheme, theme_bright, "bright() factory method")
+Rel(color_scheme, theme_tech, "tech() factory method")
+
+SHOW_LEGEND()
+
+@enduml

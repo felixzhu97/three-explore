@@ -1,0 +1,30 @@
+@startuml C4_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram - threejs-globe
+
+Person(browser_user, "Browser User", "Views 3D globe visualization")
+Person(developer, "Developer", "Uses components to build 3D globe apps")
+
+System_Boundary(c1, "threejs-globe System") {
+    System(globe_app, "threejs-globe", "3D Globe with flying routes")
+}
+
+System_Ext(ext_browser, "Web Browser", "Client environment with WebGL support")
+System_Ext(cdn, "CDN", "Static resources like textures")
+System_Ext(github, "GitHub", "Source code hosting")
+
+Rel(browser_user, ext_browser, "Accesses via")
+Rel(browser_user, globe_app, "Uses 3D globe")
+Rel(developer, globe_app, "Develops with")
+Rel(developer, github, "Clones code from")
+
+Rel(globe_app, ext_browser, "Renders to", "WebGL")
+Rel(globe_app, cdn, "Fetches assets from")
+Rel(globe_app, github, "Pulls updates from")
+
+SHOW_LEGEND()
+
+@enduml

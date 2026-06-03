@@ -1,0 +1,30 @@
+@startuml C4_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram - threejs-globe
+
+Person(user, "User", "End user accessing the application")
+
+System_Boundary(spa, "Single Page Application") {
+    Container(spa_vite, "Vite Dev Server", "Vite", "Dev server with HMR")
+    Container(react_app, "Globe App", "React + TypeScript", "Main React component")
+    Container(three_renderer, "Three.js Renderer", "Three.js + WebGL", "WebGL 3D rendering")
+    Container(animation_system, "Animation System", "GSAP", "Animation loop management")
+    Container(webgl_canvas, "WebGL Canvas", "HTML5 Canvas", "Rendering output")
+}
+
+ContainerDb(texture_storage, "Texture Storage", "File System", "Texture images", "public/img/")
+
+Rel(user, spa_vite, "HTTP Request", "HTTPS")
+Rel(spa_vite, react_app, "JS Bundle", "Module Load")
+Rel(react_app, three_renderer, "Creates scene", "API Call")
+Rel(react_app, animation_system, "Configures", "Method Call")
+Rel(three_renderer, webgl_canvas, "Renders frames", "GPU Command")
+Rel(three_renderer, texture_storage, "Loads textures", "File Read")
+Rel(animation_system, three_renderer, "Drives loop", "Tick Callback")
+
+SHOW_LEGEND()
+
+@enduml
