@@ -907,7 +907,7 @@ function Globe() {
         className="source_btn"
         onClick={() =>
           window.open(
-            'https://github.com/felixzhu97/threejs-globe-stripe',
+            'https://github.com/felixzhu97/public-three-explore',
             '_blank',
           )
         }

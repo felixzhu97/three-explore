@@ -1,20 +1,31 @@
-# threejs-globe
+# Three.js Globe
 
-This is inspired by Github & Stripes webgl globes.
+An interactive 3D globe visualization built with Three.js, featuring a twinkling star effect and animated flying lines connecting global locations.
 
-The dots clustered together resembling continents are achieved by reading an image of the world.
-Getting the image data for each pixel and iterating over each pixel.
-If the pixels r,g,b values exceed 100, display dot.
-The position of the dot is worked out by determining the lat and long position of the pixel.
+## Features
 
-Each dot within the canvas independently changes colour to give off a twinkling effect.
-This is achieved by shaders. 
+- **Interactive Globe**: Click and drag to rotate the globe, with dots extruding outward for a scattered effect
+- **Twinkling Dots**: Stars twinkle independently using custom shaders
+- **Flying Lines**: Animated curved paths connecting global locations with texture-based effects
+- **Land Mass Visualization**: Dots cluster to form recognizable continent shapes
 
-If the globe is clicked and dragged, the globe rotates in the direction of the drag.
-Along with this functionality, each dot independently extrudes off the globe creating a scattered effect.
-This is achieved by shaders.
+## Tech Stack
 
-To view, checkout: <a href="https://hydeit.co/globe/" target="_blank">https://threejs-globe-main.vercel.app</a>
+- Three.js - 3D rendering
+- React - UI framework
+- Custom GLSL shaders - Twinkling and scatter effects
 
-![alt text](./public/img/app_screen_shot.png)
+## Getting Started
 
+```bash
+npm install
+npm run dev
+```
+
+## References
+
+Inspired by GitHub & Stripe's WebGL globe implementations.
+
+View live: https://threejs-globe-main.vercel.app
+
+![Globe Preview](./public/img/app_screen_shot.png)
