@@ -156,7 +156,7 @@ function Globe() {
       flyingLineMaterials,
       dotMeshes
 
-    const setScene = () => {
+    const initializeScene = () => {
       sizes = {
         width: container.offsetWidth,
         height: container.offsetHeight,
@@ -187,17 +187,17 @@ function Globe() {
       mouseDown = false
       grabbing = false
 
-      setControls()
-      setBaseSphere()
-      setShaderMaterial()
-      setMap()
-      setFlyingLines()
-      resize()
-      listenTo()
-      render()
+      configureOrbitControls()
+      createBaseGlobeMesh()
+      initializeGlobeShaderMaterial()
+      initializeMapFromTexture()
+      initializeFlyingLineSystem()
+      handleResize()
+      bindEventListeners()
+      startRenderLoop()
     }
 
-    const setControls = () => {
+    const configureOrbitControls = () => {
       controls = new OrbitControls(camera, renderer.domElement)
       controls.autoRotate = true
       controls.autoRotateSpeed = 1.2
@@ -209,7 +209,7 @@ function Globe() {
       controls.maxPolarAngle = Math.PI / 2 + 0.5
     }
 
-    const setBaseSphere = () => {
+    const createBaseGlobeMesh = () => {
       const baseSphere = new THREE.SphereGeometry(19.5, 35, 35)
       const baseMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
@@ -220,7 +220,7 @@ function Globe() {
       scene.add(baseMesh)
     }
 
-    const setShaderMaterial = () => {
+    const initializeGlobeShaderMaterial = () => {
       twinkleTime = 0.03
       materials = []
       material = new THREE.ShaderMaterial({
@@ -234,13 +234,13 @@ function Globe() {
       })
     }
 
-    const setFlyingLines = () => {
+    const initializeFlyingLineSystem = () => {
       flyingLines = []
       flyingLineMaterials = []
       dotMeshes = []
 
       // 创建程序化纹理作为备用 - 不透明版本
-      const createGradientTexture = () => {
+      const generateFallbackGradientTexture = () => {
         const canvas = document.createElement('canvas')
         canvas.width = 256
         canvas.height = 32
@@ -264,7 +264,7 @@ function Globe() {
 
       // 加载arc-texture纹理，如果失败则使用程序化纹理
       const textureLoader = new THREE.TextureLoader()
-      const gradientTexture = createGradientTexture()
+      const gradientTexture = generateFallbackGradientTexture()
 
       const arcTextures = [
         gradientTexture, // 使用程序化纹理作为主要纹理
@@ -274,7 +274,7 @@ function Globe() {
       ]
 
       // 尝试加载外部纹理（如果存在的话）
-      const tryLoadTexture = (url, index) => {
+      const loadArcTexture = (url, index) => {
         textureLoader.load(
           url,
           (texture) => {
@@ -290,10 +290,10 @@ function Globe() {
         )
       }
 
-      tryLoadTexture('/img/arc-texture-1.png', 0)
-      tryLoadTexture('/img/arc-texture-2.png', 1)
-      tryLoadTexture('/img/arc-texture-3.png', 2)
-      tryLoadTexture('/img/arc-texture-4.png', 3)
+      loadArcTexture('/img/arc-texture-1.png', 0)
+      loadArcTexture('/img/arc-texture-2.png', 1)
+      loadArcTexture('/img/arc-texture-3.png', 2)
+      loadArcTexture('/img/arc-texture-4.png', 3)
 
       // 飞线的顶点着色器 - 两阶段动画效果
       const flyingLineVertex = `
@@ -442,7 +442,7 @@ function Globe() {
       `
 
       // 计算两点间的贝塞尔曲线路径 - 优化版本
-      const createCurvedPath = (start, end, segments = 60) => {
+      const calculateBezierCurvePoints = (start, end, segments = 60) => {
         const points = []
         const distance = start.distanceTo(end)
         const height = Math.max(
@@ -487,7 +487,7 @@ function Globe() {
       }
 
       // 计算地球表面位置（用于端点圆心） - 与地图点位置完全一致
-      const latLonToSurfaceVector3 = (
+      const convertLatLonToSurfacePosition = (
         lat,
         lon,
         radius = MAP_DOTS_CONFIG.sphereRadius,
@@ -503,9 +503,9 @@ function Globe() {
       }
 
       // 创建端点标记 - 贴在地球表面
-      const createEndPoint = (latLon, color) => {
+      const buildEndpointMarker = (latLon, color) => {
         // 使用地球表面位置
-        const surfacePosition = latLonToSurfaceVector3(latLon.lat, latLon.lon)
+        const surfacePosition = convertLatLonToSurfacePosition(latLon.lat, latLon.lon)
 
         // 创建一个平面几何体，使用配置的端点大小
         const geometry = new THREE.PlaneGeometry(
@@ -578,17 +578,17 @@ function Globe() {
       }
 
       // 创建飞线 - 使用圆形管道几何体
-      const createFlyingLine = (
+      const buildFlyingLineMesh = (
         startLatLon,
         endLatLon,
         color = new THREE.Vector3(0.3, 0.8, 1.0),
         textureIndex = 0,
       ) => {
         // 使用与圆点完全相同的位置计算方法
-        const startPos = latLonToSurfaceVector3(startLatLon.lat, startLatLon.lon)
-        const endPos = latLonToSurfaceVector3(endLatLon.lat, endLatLon.lon)
+        const startPos = convertLatLonToSurfacePosition(startLatLon.lat, startLatLon.lon)
+        const endPos = convertLatLonToSurfacePosition(endLatLon.lat, endLatLon.lon)
 
-        const pathPoints = createCurvedPath(startPos, endPos, 50)
+        const pathPoints = calculateBezierCurvePoints(startPos, endPos, 50)
 
         // 创建曲线路径
         const curve = new THREE.CatmullRomCurve3(pathPoints)
@@ -648,13 +648,13 @@ function Globe() {
         flyingLines.push(line)
 
         // 创建起点和终点的标记
-        createEndPoint(startLatLon, color)
-        createEndPoint(endLatLon, color)
+        buildEndpointMarker(startLatLon, color)
+        buildEndpointMarker(endLatLon, color)
       }
 
       // 使用配置创建飞线
       FLYING_LINE_ROUTES.forEach((route, index) => {
-        createFlyingLine(
+        buildFlyingLineMesh(
           route.start,
           route.end,
           FLYING_LINE_COLORS[index % FLYING_LINE_COLORS.length],
@@ -663,11 +663,11 @@ function Globe() {
       })
     }
 
-    const setMap = () => {
+    const initializeMapFromTexture = () => {
       let activeLatLon = {}
       const dotSphereRadius = MAP_DOTS_CONFIG.sphereRadius
 
-      const readImageData = (imageData) => {
+      const extractLandCoordinates = (imageData) => {
         for (let i = 0, lon = -180, lat = 90; i < imageData.length; i += 4, lon++) {
           if (!activeLatLon[lat]) activeLatLon[lat] = []
 
@@ -684,7 +684,7 @@ function Globe() {
         }
       }
 
-      const visibilityForCoordinate = (lon, lat) => {
+      const isCoordinateOnLand = (lon, lat) => {
         let visible = false
 
         if (!activeLatLon[lat].length) return visible
@@ -698,7 +698,7 @@ function Globe() {
         return visible
       }
 
-      const calcPosFromLatLonRad = (lon, lat) => {
+      const convertLatLonToVector3 = (lon, lat) => {
         var phi = (90 - lat) * (Math.PI / 180)
         var theta = (lon + 180) * (Math.PI / 180)
 
@@ -709,14 +709,14 @@ function Globe() {
         return new THREE.Vector3(x, y, z)
       }
 
-      const createMaterial = (timeValue) => {
+      const createDotMaterial = (timeValue) => {
         const mat = material.clone()
         mat.uniforms.u_time.value = timeValue * Math.sin(Math.random())
         materials.push(mat)
         return mat
       }
 
-      const setDots = () => {
+      const generateLandDots = () => {
         const dotDensity = MAP_DOTS_CONFIG.dotDensity
         let vector = new THREE.Vector3()
 
@@ -729,9 +729,9 @@ function Globe() {
           for (let x = 0; x < dotsForLat; x++) {
             const long = -180 + (x * 360) / dotsForLat
 
-            if (!visibilityForCoordinate(long, lat)) continue
+            if (!isCoordinateOnLand(long, lat)) continue
 
-            vector = calcPosFromLatLonRad(long, lat)
+            vector = convertLatLonToVector3(long, lat)
 
             const dotGeometry = new THREE.CircleGeometry(
               MAP_DOTS_CONFIG.dotRadius,
@@ -740,7 +740,7 @@ function Globe() {
             dotGeometry.lookAt(vector)
             dotGeometry.translate(vector.x, vector.y, vector.z)
 
-            const m = createMaterial(i)
+            const m = createDotMaterial(i)
             const mesh = new THREE.Mesh(dotGeometry, m)
             dotMeshes.push(mesh)
 
@@ -766,15 +766,15 @@ function Globe() {
           imageCanvas.width,
           imageCanvas.height,
         )
-        readImageData(imageData.data)
+        extractLandCoordinates(imageData.data)
 
-        setDots()
+        generateLandDots()
       }
 
       image.src = MAP_DOTS_CONFIG.worldTextureUrl
     }
 
-    const resize = () => {
+    const handleResize = () => {
       sizes = {
         width: container.offsetWidth,
         height: container.offsetHeight,
@@ -789,7 +789,7 @@ function Globe() {
       renderer.setSize(sizes.width, sizes.height)
     }
 
-    const mousemove = (event) => {
+    const handleMouseMove = (event) => {
       isIntersecting = false
 
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1
@@ -806,7 +806,7 @@ function Globe() {
       }
     }
 
-    const mousedown = () => {
+    const handleMouseDown = () => {
       if (!isIntersecting) return
 
       materials.forEach((el) => {
@@ -820,14 +820,14 @@ function Globe() {
 
       setTimeout(() => {
         minMouseDownFlag = true
-        if (!mouseDown) mouseup()
+        if (!mouseDown) handleMouseUp()
       }, 500)
 
       document.body.style.cursor = 'grabbing'
       grabbing = true
     }
 
-    const mouseup = () => {
+    const handleMouseUp = () => {
       mouseDown = false
       if (!minMouseDownFlag) return
 
@@ -843,14 +843,14 @@ function Globe() {
       else document.body.style.cursor = 'default'
     }
 
-    const listenTo = () => {
-      window.addEventListener('resize', resize.bind(this))
-      window.addEventListener('mousemove', mousemove.bind(this))
-      window.addEventListener('mousedown', mousedown.bind(this))
-      window.addEventListener('mouseup', mouseup.bind(this))
+    const bindEventListeners = () => {
+      window.addEventListener('resize', handleResize.bind(this))
+      window.addEventListener('mousemove', handleMouseMove.bind(this))
+      window.addEventListener('mousedown', handleMouseDown.bind(this))
+      window.addEventListener('mouseup', handleMouseUp.bind(this))
     }
 
-    const render = () => {
+    const startRenderLoop = () => {
       materials.forEach((el) => {
         el.uniforms.u_time.value += twinkleTime
       })
@@ -871,20 +871,20 @@ function Globe() {
 
       controls.update()
       renderer.render(scene, camera)
-      animationFrameId = requestAnimationFrame(render.bind(this))
+      animationFrameId = requestAnimationFrame(startRenderLoop.bind(this))
     }
 
     let animationFrameId
 
     // 初始化场景
-    setScene()
+    initializeScene()
 
     // 清理函数
     return () => {
-      window.removeEventListener('resize', resize)
-      window.removeEventListener('mousemove', mousemove)
-      window.removeEventListener('mousedown', mousedown)
-      window.removeEventListener('mouseup', mouseup)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mouseup', handleMouseUp)
 
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId)
