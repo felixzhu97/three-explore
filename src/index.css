@@ -16,13 +16,6 @@ html, body {
   height: 100%;
   margin: 0px;
   padding: 0px;
-  background: radial-gradient(
-    ellipse 90% 85% at 50% 50%,
-    rgba(210, 120, 255, 0.22) 0%,
-    rgba(180, 80, 240, 0.10) 40%,
-    rgba(255, 255, 255, 0) 80%
-  ),
-  #ffffff;
 }
 
 .globe-canvas {
